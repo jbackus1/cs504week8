@@ -2,7 +2,7 @@ import azure.functions as func
 import os
 import json
 import logging
-import pyodbc
+import pymssql
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -19,15 +19,12 @@ password = os.environ.get("SQL_PASSWORD", "Password1")
 
 
 def get_db_connection():
-    return pyodbc.connect(
-        "DRIVER={ODBC Driver 18 for SQL Server};"
-        "SERVER=" + server + ";"
-        "DATABASE=" + database + ";"
-        "UID=" + username + ";"
-        "PWD=" + password + ";"
-        "ENCRYPT=yes;"
-        "TrustServerCertificate=no;"
-        "Connection Timeout=30;"
+    return pymssql.connect(
+        server=server,
+        user=username,
+        password=password,
+        database=database,
+        login_timeout=30
     )
 
 
@@ -43,7 +40,7 @@ def login(req: func.HttpRequest) -> func.HttpResponse:
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT * FROM users WHERE username = ? AND password = ?",
+            "SELECT * FROM users WHERE username = %s AND password = %s",
             (req_username, req_password)
         )
         result = cursor.fetchone()
